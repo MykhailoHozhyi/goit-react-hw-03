@@ -1,25 +1,64 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ContactForm from '../ContactForm/ContactForm';
 import ContactList from '../ContactList/ContactList';
 import SearchBox from '../SearchBox/SearchBox';
 import './App.css';
+import contactsData from '../../contacts.json';
+import { nanoid } from 'nanoid';
 
 export default function App() {
-  const [contacts, setContacts] = useState([
-    { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-    { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-    { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-    { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-  ]);
+  const [contacts, setContacts] = useState(() => {
+    const stringifiedContacts = localStorage.getItem('contacts');
+    const parsedContacts = JSON.parse(stringifiedContacts) ?? contactsData;
+
+    return parsedContacts;
+  });
+
+  useEffect(() => {
+    const stringifiedContacts = JSON.stringify(contacts);
+    localStorage.setItem('contacts', stringifiedContacts);
+  }, [contacts]);
+
+  const [filterValue, setFilterValue] = useState('');
+
+  const filterContacts = contacts.filter(contact =>
+    contact.name
+      .toLocaleLowerCase()
+      .includes(filterValue.toLocaleLowerCase().trim())
+  );
+
+  function onAddContact(formData) {
+    const finalContact = {
+      id: nanoid(),
+      ...formData,
+    };
+
+    setContacts([...contacts, finalContact]);
+  }
+
+  function onDeleteContact(contactId) {
+    const updatedContacts = contacts.filter(
+      contact => contact.id !== contactId
+    );
+
+    setContacts(updatedContacts);
+  }
+
+  function handleChange(event) {
+    setFilterValue(event.target.value);
+  }
 
   return (
-    <>
+    <div className="phonebookContainer">
       <h1>Phonebook</h1>
-      <ContactForm />
+      <ContactForm onAddContact={onAddContact} />
 
-      <SearchBox />
+      <SearchBox filterValue={filterValue} handleChange={handleChange} />
 
-      <ContactList contacts={contacts} />
-    </>
+      <ContactList
+        contacts={filterContacts}
+        onDeleteContact={onDeleteContact}
+      />
+    </div>
   );
 }
